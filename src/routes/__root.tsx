@@ -6,11 +6,25 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useMatches,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  BookOpen,
+  ScrollText,
+  Library,
+  Zap,
+  LogIn,
+  UserPlus,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { AppStateProvider, useAppState } from "../context/AppState";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { AuthModal } from "../components/AuthModal";
 
 function NotFoundComponent() {
   return (
@@ -78,10 +92,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Urdu Alive — Learn, Rediscover, and Preserve Urdu" },
-      { name: "description", content: "A modern platform to learn practical Urdu, revive vocabulary, explore literary words and cultural idioms." },
+      {
+        name: "description",
+        content:
+          "A modern platform to learn practical Urdu, revive vocabulary, explore literary words and cultural idioms.",
+      },
       { name: "author", content: "Urdu Alive" },
       { property: "og:title", content: "Urdu Alive — Learn, Rediscover, and Preserve Urdu" },
-      { property: "og:description", content: "Learn Urdu in 40 days, revive your vocabulary, and explore the cultural treasury of the Urdu language." },
+      {
+        property: "og:description",
+        content:
+          "Learn Urdu in 40 days, revive your vocabulary, and explore the cultural treasury of the Urdu language.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -115,13 +137,134 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function SharedNav() {
+  const matches = useMatches();
+  const isHome = matches.some((m) => m.pathname === "/");
+  const { user, logOut } = useAppState();
+  const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  return (
+    <>
+      <nav className="sticky top-0 z-50 backdrop-blur-md bg-paper/80 dark:bg-background/80 border-b border-ink/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="inline-grid place-items-center size-8 rounded-lg bg-rose text-paper font-display font-bold text-sm shadow-md shadow-rose/25">
+              ا
+            </span>
+            <span className="font-display text-lg font-semibold tracking-tight hidden sm:inline">
+              Urdu <span className="italic text-rose">Alive</span>
+            </span>
+          </Link>
+          <div className="flex items-center gap-1 sm:gap-3 text-xs sm:text-sm font-medium">
+            {!isHome && (
+              <>
+                <Link
+                  to="/learn-40-days"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-ink/5 transition-colors text-ink/70 hover:text-ink"
+                >
+                  <BookOpen className="size-3.5" />
+                  <span className="hidden sm:inline">Learn</span>
+                </Link>
+                <Link
+                  to="/revive-urdu"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-ink/5 transition-colors text-ink/70 hover:text-ink"
+                >
+                  <Zap className="size-3.5" />
+                  <span className="hidden sm:inline">Revive</span>
+                </Link>
+                <Link
+                  to="/idioms-stories"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-ink/5 transition-colors text-ink/70 hover:text-ink"
+                >
+                  <ScrollText className="size-3.5" />
+                  <span className="hidden sm:inline">Idioms</span>
+                </Link>
+                <Link
+                  to="/urdu-treasury"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-ink/5 transition-colors text-ink/70 hover:text-ink"
+                >
+                  <Library className="size-3.5" />
+                  <span className="hidden sm:inline">Treasury</span>
+                </Link>
+              </>
+            )}
+            <ThemeToggle />
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose/10 text-rose text-xs font-semibold hover:bg-rose/20 transition-colors"
+                >
+                  <span className="size-5 rounded-full bg-rose text-paper flex items-center justify-center text-[10px] font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
+                  <ChevronDown className="size-3" />
+                </button>
+                {showUserMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-ink/10 rounded-xl shadow-lg py-2 z-50">
+                      <div className="px-4 py-2 border-b border-ink/5">
+                        <p className="text-xs font-semibold truncate">{user.name}</p>
+                        <p className="text-[10px] text-ink/40 truncate">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          logOut();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-xs text-rose hover:bg-ink/5 transition-colors"
+                      >
+                        <LogOut className="size-3.5" />
+                        Log Out
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setAuthModal("login")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-ink/5 transition-colors text-ink/70 hover:text-ink text-xs font-medium"
+                >
+                  <LogIn className="size-3.5" />
+                  <span className="hidden sm:inline">Log In</span>
+                </button>
+                <button
+                  onClick={() => setAuthModal("signup")}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose text-paper text-xs font-semibold hover:bg-rose/90 transition-colors"
+                >
+                  <UserPlus className="size-3.5" />
+                  <span className="hidden sm:inline">Sign Up</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+      {authModal && (
+        <AuthModal
+          mode={authModal}
+          onClose={() => setAuthModal(null)}
+          switchMode={() => setAuthModal(authModal === "login" ? "signup" : "login")}
+        />
+      )}
+    </>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <AppStateProvider>
+        <SharedNav />
+        <Outlet />
+      </AppStateProvider>
     </QueryClientProvider>
   );
 }

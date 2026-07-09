@@ -49,13 +49,13 @@
   --radius: 0.875rem;
 
   /* Vibrant cultural palette */
-  --paper: oklch(0.985 0.012 80);          /* warm cream */
-  --ink: oklch(0.18 0.03 280);              /* deep indigo-black */
-  --saffron: oklch(0.74 0.18 55);           /* saffron orange */
-  --rose: oklch(0.62 0.22 12);              /* deep rose / pomegranate */
-  --teal: oklch(0.58 0.13 195);             /* peacock teal */
-  --indigo-deep: oklch(0.36 0.14 280);      /* mughal indigo */
-  --mustard: oklch(0.82 0.16 90);           /* mustard gold */
+  --paper: oklch(0.985 0.012 80); /* warm cream */
+  --ink: oklch(0.18 0.03 280); /* deep indigo-black */
+  --saffron: oklch(0.74 0.18 55); /* saffron orange */
+  --rose: oklch(0.62 0.22 12); /* deep rose / pomegranate */
+  --teal: oklch(0.58 0.13 195); /* peacock teal */
+  --indigo-deep: oklch(0.36 0.14 280); /* mughal indigo */
+  --mustard: oklch(0.82 0.16 90); /* mustard gold */
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -127,4 +127,21 @@
     background-size: 3px 3px;
     mix-blend-mode: multiply;
   }
+}
+
+@utility perspective-1000 {
+  perspective: 1000px;
+}
+
+@utility preserve-3d {
+  transform-style: preserve-3d;
+}
+
+@utility backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+@utility rotate-y-180 {
+  transform: rotateY(180deg);
 }

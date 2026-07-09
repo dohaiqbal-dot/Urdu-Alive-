@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UrduTreasuryRouteImport } from './routes/urdu-treasury'
+import { Route as ReviveUrduRouteImport } from './routes/revive-urdu'
+import { Route as Learn40DaysRouteImport } from './routes/learn-40-days'
+import { Route as IdiomsStoriesRouteImport } from './routes/idioms-stories'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UrduTreasuryRoute = UrduTreasuryRouteImport.update({
+  id: '/urdu-treasury',
+  path: '/urdu-treasury',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviveUrduRoute = ReviveUrduRouteImport.update({
+  id: '/revive-urdu',
+  path: '/revive-urdu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Learn40DaysRoute = Learn40DaysRouteImport.update({
+  id: '/learn-40-days',
+  path: '/learn-40-days',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IdiomsStoriesRoute = IdiomsStoriesRouteImport.update({
+  id: '/idioms-stories',
+  path: '/idioms-stories',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,88 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/idioms-stories': typeof IdiomsStoriesRoute
+  '/learn-40-days': typeof Learn40DaysRoute
+  '/revive-urdu': typeof ReviveUrduRoute
+  '/urdu-treasury': typeof UrduTreasuryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/idioms-stories': typeof IdiomsStoriesRoute
+  '/learn-40-days': typeof Learn40DaysRoute
+  '/revive-urdu': typeof ReviveUrduRoute
+  '/urdu-treasury': typeof UrduTreasuryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/idioms-stories': typeof IdiomsStoriesRoute
+  '/learn-40-days': typeof Learn40DaysRoute
+  '/revive-urdu': typeof ReviveUrduRoute
+  '/urdu-treasury': typeof UrduTreasuryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/idioms-stories'
+    | '/learn-40-days'
+    | '/revive-urdu'
+    | '/urdu-treasury'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/idioms-stories'
+    | '/learn-40-days'
+    | '/revive-urdu'
+    | '/urdu-treasury'
+  id:
+    | '__root__'
+    | '/'
+    | '/idioms-stories'
+    | '/learn-40-days'
+    | '/revive-urdu'
+    | '/urdu-treasury'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  IdiomsStoriesRoute: typeof IdiomsStoriesRoute
+  Learn40DaysRoute: typeof Learn40DaysRoute
+  ReviveUrduRoute: typeof ReviveUrduRoute
+  UrduTreasuryRoute: typeof UrduTreasuryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/urdu-treasury': {
+      id: '/urdu-treasury'
+      path: '/urdu-treasury'
+      fullPath: '/urdu-treasury'
+      preLoaderRoute: typeof UrduTreasuryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revive-urdu': {
+      id: '/revive-urdu'
+      path: '/revive-urdu'
+      fullPath: '/revive-urdu'
+      preLoaderRoute: typeof ReviveUrduRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn-40-days': {
+      id: '/learn-40-days'
+      path: '/learn-40-days'
+      fullPath: '/learn-40-days'
+      preLoaderRoute: typeof Learn40DaysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/idioms-stories': {
+      id: '/idioms-stories'
+      path: '/idioms-stories'
+      fullPath: '/idioms-stories'
+      preLoaderRoute: typeof IdiomsStoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,7 +137,21 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  IdiomsStoriesRoute: IdiomsStoriesRoute,
+  Learn40DaysRoute: Learn40DaysRoute,
+  ReviveUrduRoute: ReviveUrduRoute,
+  UrduTreasuryRoute: UrduTreasuryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
