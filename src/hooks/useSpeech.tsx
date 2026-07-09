@@ -1,94 +1,128 @@
-import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState } from "react";
 
-/**
- * Clean phonetic fallback: strips diacritics and normalizes Roman Urdu text
- * so the default system voice can articulate syllables correctly.
- */
-function toPhonetic(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u064F]/g, "") // strip combining diacritics
-    .replace(/[^\w\s'-]/g, "") // remove non-word chars except spaces/hyphens/apostrophes
-    .replace(/\s+/g, " ") // collapse whitespace
-    .trim();
-}
+const API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY || "";
+const VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+const MODEL_ID = "eleven_multilingual_v2";
 
 export function useSpeech() {
-  const speaking = useRef(false);
-  const [voicesLoaded, setVoicesLoaded] = useState(false);
-  const [urduVoice, setUrduVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-
-    const findUrduVoice = () => {
-      const voices = window.speechSynthesis.getVoices();
-      // Aggressive match: ur-PK first, then any ur* voice
-      const match =
-        voices.find((v) => v.lang === "ur-PK") ||
-        voices.find((v) => v.lang === "ur") ||
-        voices.find((v) => v.lang.startsWith("ur"));
-      if (match) {
-        setUrduVoice(match);
-      }
-      return voices.length > 0;
-    };
-
-    const loaded = findUrduVoice();
-    setVoicesLoaded(loaded);
-
-    const handler = () => {
-      findUrduVoice();
-      setVoicesLoaded(true);
-    };
-    window.speechSynthesis.addEventListener("voiceschanged", handler);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", handler);
+  const stop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setLoading(false);
   }, []);
 
   const speak = useCallback(
-    (text: string) => {
-      if (typeof window === "undefined" || !window.speechSynthesis) return;
-
-      // Always cancel existing speech before starting new
-      window.speechSynthesis.cancel();
-      speaking.current = false;
-
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "ur-PK";
-      utterance.rate = 0.85;
-      utterance.pitch = 1.0;
-
-      // Use cached Urdu voice if available, otherwise let the system pick
-      if (urduVoice) {
-        utterance.voice = urduVoice;
-      } else {
-        // No Urdu voice found — use phonetic fallback so default voice
-        // can articulate Roman Urdu syllables cleanly
-        utterance.text = toPhonetic(text);
-        utterance.lang = "en-US"; // fall back to English voice for Roman text
+    async (text: string, urduScript?: string) => {
+      // Stop any existing playback first
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      if (blobUrlRef.current) {
+        URL.revokeObjectURL(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
       }
 
-      utterance.onstart = () => {
-        speaking.current = true;
-      };
-      utterance.onend = () => {
-        speaking.current = false;
-      };
-      utterance.onerror = () => {
-        speaking.current = false;
-      };
+      if (!API_KEY) {
+        fallbackSpeak(text);
+        return;
+      }
 
-      window.speechSynthesis.speak(utterance);
+      setLoading(true);
+      try {
+        const textToSpeak = urduScript || text;
+        const response = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "xi-api-key": API_KEY,
+            },
+            body: JSON.stringify({
+              text: textToSpeak,
+              model_id: MODEL_ID,
+              voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+              },
+            }),
+          },
+        );
+
+        if (!response.ok) throw new Error("ElevenLabs API error");
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        blobUrlRef.current = audioUrl;
+
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          if (blobUrlRef.current === audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+            blobUrlRef.current = null;
+          }
+          audioRef.current = null;
+          setLoading(false);
+        };
+        audio.onerror = () => {
+          if (blobUrlRef.current === audioUrl) {
+            URL.revokeObjectURL(audioUrl);
+            blobUrlRef.current = null;
+          }
+          audioRef.current = null;
+          setLoading(false);
+        };
+
+        await audio.play();
+      } catch {
+        setLoading(false);
+        fallbackSpeak(text);
+      }
     },
-    [urduVoice],
+    [],
   );
 
-  const stop = useCallback(() => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-      speaking.current = false;
-    }
-  }, []);
+  return { speak, stop, loading };
+}
 
-  return { speak, stop };
+function fallbackSpeak(text: string) {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "ur-PK";
+  utterance.rate = 0.85;
+  utterance.pitch = 1.0;
+
+  const voices = window.speechSynthesis.getVoices();
+  const urduVoice =
+    voices.find((v) => v.lang === "ur-PK") ||
+    voices.find((v) => v.lang === "ur") ||
+    voices.find((v) => v.lang.startsWith("ur"));
+  if (urduVoice) {
+    utterance.voice = urduVoice;
+  }
+
+  window.speechSynthesis.speak(utterance);
 }

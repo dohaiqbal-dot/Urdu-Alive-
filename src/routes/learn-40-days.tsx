@@ -3,6 +3,7 @@ import { useState, useCallback, useMemo } from "react";
 import {
   Volume2,
   RotateCcw,
+  Loader2,
   Check,
   X,
   Sparkles,
@@ -31,6 +32,7 @@ interface Flashcard {
   id: string;
   front: string;
   back: string;
+  urduScript: string;
 }
 
 interface QuizQuestion {
@@ -66,6 +68,7 @@ function generateFlashcards(day: number): Flashcard[] {
     id: `fc-${day}-${w.id}`,
     front: w.english,
     back: w.romanUrdu,
+    urduScript: w.urduScript,
   }));
 }
 
@@ -100,7 +103,7 @@ function Learn40DaysPage() {
     markDayComplete,
     addXP,
   } = useAppState();
-  const { speak, stop } = useSpeech();
+  const { speak, stop, loading } = useSpeech();
   const [view, setView] = useState<"list" | "practice">("list");
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -324,11 +327,16 @@ function Learn40DaysPage() {
                         {word.romanUrdu}
                       </span>
                       <button
-                        onClick={() => speak(word.romanUrdu)}
-                        className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0"
+                        onClick={() => speak(word.romanUrdu, word.urduScript)}
+                        disabled={loading}
+                        className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0 disabled:opacity-50"
                         title="Listen to pronunciation"
                       >
-                        <Volume2 className="size-4" />
+                        {loading ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Volume2 className="size-4" />
+                        )}
                       </button>
                     </div>
                   ))}
@@ -432,11 +440,16 @@ function Learn40DaysPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              speak(flashcards[flashcardIndex].back);
+                              speak(flashcards[flashcardIndex].back, flashcards[flashcardIndex].urduScript);
                             }}
-                            className="mt-4 size-10 rounded-full bg-paper/20 flex items-center justify-center hover:bg-paper/30 transition-colors"
+                            disabled={loading}
+                            className="mt-4 size-10 rounded-full bg-paper/20 flex items-center justify-center hover:bg-paper/30 transition-colors disabled:opacity-50"
                           >
-                            <Volume2 className="size-5" />
+                            {loading ? (
+                              <Loader2 className="size-5 animate-spin" />
+                            ) : (
+                              <Volume2 className="size-5" />
+                            )}
                           </button>
                         </div>
                       </div>

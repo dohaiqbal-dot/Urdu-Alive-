@@ -2,8 +2,6 @@
 @source "../src";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -76,26 +74,6 @@
   --border: oklch(0.9 0.02 80);
   --input: oklch(0.9 0.02 80);
   --ring: var(--rose);
-}
-
-.dark {
-  --background: oklch(0.16 0.03 280);
-  --foreground: oklch(0.97 0.01 80);
-  --card: oklch(0.22 0.04 280);
-  --card-foreground: oklch(0.97 0.01 80);
-  --popover: oklch(0.22 0.04 280);
-  --popover-foreground: oklch(0.97 0.01 80);
-  --primary: var(--saffron);
-  --primary-foreground: oklch(0.18 0.03 280);
-  --secondary: oklch(0.28 0.04 280);
-  --secondary-foreground: oklch(0.97 0.01 80);
-  --muted: oklch(0.26 0.03 280);
-  --muted-foreground: oklch(0.7 0.04 80);
-  --accent: var(--rose);
-  --accent-foreground: oklch(0.99 0.005 80);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: var(--saffron);
 }
 
 @layer base {

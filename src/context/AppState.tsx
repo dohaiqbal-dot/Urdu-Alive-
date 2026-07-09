@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 
 type Track = "revive" | "learn40" | null;
-type Theme = "light" | "dark";
 
 interface User {
   id: string;
@@ -10,8 +9,6 @@ interface User {
 }
 
 interface AppState {
-  theme: Theme;
-  toggleTheme: () => void;
   uuid: string;
   xp: number;
   addXP: (amount: number) => void;
@@ -62,7 +59,6 @@ function saveState(state: {
   activeTrack: Track;
   completedDays: number[];
   totalWordsLearned: number;
-  theme: Theme;
 }) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -109,14 +105,6 @@ const AppStateContext = createContext<AppState | null>(null);
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [saved] = useState(() => loadState());
   const [uuid] = useState(() => generateUUID());
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      const savedTheme = localStorage.getItem("urdu-alive-theme") as Theme | null;
-      if (savedTheme) return savedTheme;
-      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-    }
-    return "light";
-  });
   const [xp, setXP] = useState(() => saved.xp ?? 0);
   const [streak, setStreak] = useState(() => saved.streak ?? 0);
   const [currentDay, setCurrentDay] = useState(() => saved.currentDay ?? 1);
@@ -126,14 +114,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => loadAuthUser());
 
   const isTrackLocked = activeTrack !== null;
-
-  const toggleTheme = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "light" ? "dark" : "light";
-      localStorage.setItem("urdu-alive-theme", next);
-      return next;
-    });
-  }, []);
 
   const addXP = useCallback((amount: number) => {
     setXP((prev) => prev + amount);
@@ -199,25 +179,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       activeTrack,
       completedDays,
       totalWordsLearned,
-      theme,
     });
-  }, [xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned, theme]);
-
-  // Apply theme class to html
-  useEffect(() => {
-    const html = document.documentElement;
-    if (theme === "dark") {
-      html.classList.add("dark");
-    } else {
-      html.classList.remove("dark");
-    }
-  }, [theme]);
+  }, [xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned]);
 
   return (
     <AppStateContext.Provider
       value={{
-        theme,
-        toggleTheme,
         uuid,
         xp,
         addXP,
