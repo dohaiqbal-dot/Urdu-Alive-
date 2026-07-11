@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Volume2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { useAppState } from "@/context/AppState";
+import { useUrduSpeech } from "@/hooks/useUrduSpeech";
 import { reviveData, type ReviveWord } from "@/content/revive-urdu-data";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { MarkDifficultButton } from "@/components/MarkDifficultButton";
 
 export const Route = createFileRoute("/revive-urdu")({
   head: () => ({
@@ -18,6 +22,11 @@ export const Route = createFileRoute("/revive-urdu")({
 });
 
 function ReviveUrduPage() {
+  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  useEffect(() => {
+    if (error) toast.error(error, { id: "urdu-voice" });
+  }, [error]);
+
   const { setActiveTrack, isTrackLocked, activeTrack, completedDays, markDayComplete, addXP } =
     useAppState();
   const [selectedWeek, setSelectedWeek] = useState(0);
@@ -184,11 +193,48 @@ function WordCard({
             <div className="text-xs text-ink/50 mt-0.5">{word.meaning}</div>
           </div>
         </div>
-        {isExpanded ? (
-          <ChevronUp className="size-4 text-ink/30" />
-        ) : (
-          <ChevronDown className="size-4 text-ink/30" />
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              speak(word.meaning);
+            }}
+            className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0 disabled:opacity-50"
+            disabled={loadingText === word.meaning}
+            title="Listen to pronunciation"
+          >
+            {loadingText === word.meaning ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Volume2 className="size-4" />
+            )}
+          </button>
+          <FavoriteButton
+            item={{
+              id: `revive-${word.id}`,
+              urduScript: word.urduScript,
+              romanUrdu: word.romanUrdu,
+              meaning: word.meaning,
+              source: "revive",
+              exampleSentence: word.urduSentence,
+            }}
+          />
+          <MarkDifficultButton
+            item={{
+              id: `dif-revive-${word.id}`,
+              urduScript: word.urduScript,
+              romanUrdu: word.romanUrdu,
+              meaning: word.meaning,
+              source: "revive",
+              exampleSentence: word.urduSentence,
+            }}
+          />
+          {isExpanded ? (
+            <ChevronUp className="size-4 text-ink/30" />
+          ) : (
+            <ChevronDown className="size-4 text-ink/30" />
+          )}
+        </div>
       </button>
 
       {isExpanded && (

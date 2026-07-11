@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import { Search, X } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Search, X, Volume2, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { treasuryCategories, allTreasuryWords, type TreasuryWord } from "@/content/treasury-data";
+import { useUrduSpeech } from "@/hooks/useUrduSpeech";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { MarkDifficultButton } from "@/components/MarkDifficultButton";
 
 export const Route = createFileRoute("/urdu-treasury")({
   head: () => ({
@@ -18,6 +22,10 @@ export const Route = createFileRoute("/urdu-treasury")({
 });
 
 function UrduTreasuryPage() {
+  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  useEffect(() => {
+    if (error) toast.error(error, { id: "urdu-voice" });
+  }, [error]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedWord, setExpandedWord] = useState<number | null>(null);
@@ -146,8 +154,47 @@ function WordCard({
         isExpanded ? "ring-2 ring-teal/30 shadow-lg" : ""
       }`}
     >
-      <div className="text-right font-urdu text-3xl text-ink leading-tight mb-3">
-        {word.urduScript}
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              speak(word.englishExplanation);
+            }}
+            className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0 disabled:opacity-50"
+            disabled={loadingText === word.englishExplanation}
+            title="Listen to pronunciation"
+          >
+            {loadingText === word.englishExplanation ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Volume2 className="size-4" />
+            )}
+          </button>
+          <FavoriteButton
+            item={{
+              id: `treasury-${word.id}`,
+              urduScript: word.urduScript,
+              romanUrdu: word.romanUrdu,
+              meaning: word.englishExplanation,
+              source: "treasury",
+              category: word.category,
+            }}
+          />
+          <MarkDifficultButton
+            item={{
+              id: `dif-treasury-${word.id}`,
+              urduScript: word.urduScript,
+              romanUrdu: word.romanUrdu,
+              meaning: word.englishExplanation,
+              source: "treasury",
+              category: word.category,
+            }}
+          />
+        </div>
+        <div className="text-right font-urdu text-3xl text-ink leading-tight">
+          {word.urduScript}
+        </div>
       </div>
       <div className="font-display text-lg italic mb-1">{word.romanUrdu}</div>
       <div className="text-[10px] font-bold uppercase tracking-wider text-teal/60 mb-2">

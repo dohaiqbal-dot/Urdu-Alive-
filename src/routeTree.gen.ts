@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UrduTreasuryRouteImport } from './routes/urdu-treasury'
+import { Route as TodaysMissionRouteImport } from './routes/todays-mission'
 import { Route as ReviveUrduRouteImport } from './routes/revive-urdu'
+import { Route as MyProgressRouteImport } from './routes/my-progress'
+import { Route as MyDictionaryRouteImport } from './routes/my-dictionary'
 import { Route as Learn40DaysRouteImport } from './routes/learn-40-days'
 import { Route as IdiomsStoriesRouteImport } from './routes/idioms-stories'
 import { Route as IndexRouteImport } from './routes/index'
@@ -20,9 +23,24 @@ const UrduTreasuryRoute = UrduTreasuryRouteImport.update({
   path: '/urdu-treasury',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TodaysMissionRoute = TodaysMissionRouteImport.update({
+  id: '/todays-mission',
+  path: '/todays-mission',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReviveUrduRoute = ReviveUrduRouteImport.update({
   id: '/revive-urdu',
   path: '/revive-urdu',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyProgressRoute = MyProgressRouteImport.update({
+  id: '/my-progress',
+  path: '/my-progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MyDictionaryRoute = MyDictionaryRouteImport.update({
+  id: '/my-dictionary',
+  path: '/my-dictionary',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Learn40DaysRoute = Learn40DaysRouteImport.update({
@@ -45,14 +63,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/idioms-stories': typeof IdiomsStoriesRoute
   '/learn-40-days': typeof Learn40DaysRoute
+  '/my-dictionary': typeof MyDictionaryRoute
+  '/my-progress': typeof MyProgressRoute
   '/revive-urdu': typeof ReviveUrduRoute
+  '/todays-mission': typeof TodaysMissionRoute
   '/urdu-treasury': typeof UrduTreasuryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/idioms-stories': typeof IdiomsStoriesRoute
   '/learn-40-days': typeof Learn40DaysRoute
+  '/my-dictionary': typeof MyDictionaryRoute
+  '/my-progress': typeof MyProgressRoute
   '/revive-urdu': typeof ReviveUrduRoute
+  '/todays-mission': typeof TodaysMissionRoute
   '/urdu-treasury': typeof UrduTreasuryRoute
 }
 export interface FileRoutesById {
@@ -60,7 +84,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/idioms-stories': typeof IdiomsStoriesRoute
   '/learn-40-days': typeof Learn40DaysRoute
+  '/my-dictionary': typeof MyDictionaryRoute
+  '/my-progress': typeof MyProgressRoute
   '/revive-urdu': typeof ReviveUrduRoute
+  '/todays-mission': typeof TodaysMissionRoute
   '/urdu-treasury': typeof UrduTreasuryRoute
 }
 export interface FileRouteTypes {
@@ -69,21 +96,30 @@ export interface FileRouteTypes {
     | '/'
     | '/idioms-stories'
     | '/learn-40-days'
+    | '/my-dictionary'
+    | '/my-progress'
     | '/revive-urdu'
+    | '/todays-mission'
     | '/urdu-treasury'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/idioms-stories'
     | '/learn-40-days'
+    | '/my-dictionary'
+    | '/my-progress'
     | '/revive-urdu'
+    | '/todays-mission'
     | '/urdu-treasury'
   id:
     | '__root__'
     | '/'
     | '/idioms-stories'
     | '/learn-40-days'
+    | '/my-dictionary'
+    | '/my-progress'
     | '/revive-urdu'
+    | '/todays-mission'
     | '/urdu-treasury'
   fileRoutesById: FileRoutesById
 }
@@ -91,7 +127,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   IdiomsStoriesRoute: typeof IdiomsStoriesRoute
   Learn40DaysRoute: typeof Learn40DaysRoute
+  MyDictionaryRoute: typeof MyDictionaryRoute
+  MyProgressRoute: typeof MyProgressRoute
   ReviveUrduRoute: typeof ReviveUrduRoute
+  TodaysMissionRoute: typeof TodaysMissionRoute
   UrduTreasuryRoute: typeof UrduTreasuryRoute
 }
 
@@ -104,11 +143,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UrduTreasuryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/todays-mission': {
+      id: '/todays-mission'
+      path: '/todays-mission'
+      fullPath: '/todays-mission'
+      preLoaderRoute: typeof TodaysMissionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/revive-urdu': {
       id: '/revive-urdu'
       path: '/revive-urdu'
       fullPath: '/revive-urdu'
       preLoaderRoute: typeof ReviveUrduRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-progress': {
+      id: '/my-progress'
+      path: '/my-progress'
+      fullPath: '/my-progress'
+      preLoaderRoute: typeof MyProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my-dictionary': {
+      id: '/my-dictionary'
+      path: '/my-dictionary'
+      fullPath: '/my-dictionary'
+      preLoaderRoute: typeof MyDictionaryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/learn-40-days': {
@@ -139,7 +199,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   IdiomsStoriesRoute: IdiomsStoriesRoute,
   Learn40DaysRoute: Learn40DaysRoute,
+  MyDictionaryRoute: MyDictionaryRoute,
+  MyProgressRoute: MyProgressRoute,
   ReviveUrduRoute: ReviveUrduRoute,
+  TodaysMissionRoute: TodaysMissionRoute,
   UrduTreasuryRoute: UrduTreasuryRoute,
 }
 export const routeTree = rootRouteImport

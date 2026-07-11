@@ -18,12 +18,27 @@ import {
   UserPlus,
   LogOut,
   ChevronDown,
+  BookMarked,
+  Target,
+  Settings,
+  ChartLine,
 } from "lucide-react";
 
+import { toast } from "sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppStateProvider, useAppState } from "../context/AppState";
+import { FavoritesProvider, useFavorites } from "../context/FavoritesContext";
+import { DifficultWordsProvider, useDifficultWords } from "../context/DifficultWordsContext";
 import { AuthModal } from "../components/AuthModal";
+import { Toaster } from "../components/ui/sonner";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+  SheetDescription,
+} from "../components/ui/sheet";
 
 function NotFoundComponent() {
   return (
@@ -140,9 +155,42 @@ function RootShell({ children }: { children: ReactNode }) {
 function SharedNav() {
   const matches = useMatches();
   const isHome = matches.some((m) => m.pathname === "/");
-  const { user, logOut } = useAppState();
+  const { user, logOut, completedDays, activeTrack, streak, totalWordsLearned } = useAppState();
+  const { difficultWords } = useDifficultWords();
+  const { favorites } = useFavorites();
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const totalDays = activeTrack === "learn40" ? 40 : activeTrack === "revive" ? 30 : 0;
+
+  const treasuryFavs = favorites.filter((f) => f.source === "treasury").length;
+  const unlockedBadges = [
+    streak >= 7 && { id: "streak-7", name: "7-Day Streak", emoji: "🔥" },
+    streak >= 30 && { id: "streak-30", name: "30-Day Streak", emoji: "⚡" },
+    totalWordsLearned >= 100 && { id: "words-100", name: "100 Words", emoji: "📚" },
+    totalWordsLearned >= 250 && { id: "words-250", name: "250 Words", emoji: "🎓" },
+    streak >= 3 && { id: "quiz-master", name: "Quiz Master", emoji: "🏆" },
+    difficultWords.length >= 20 && {
+      id: "difficult-conqueror",
+      name: "Word Conqueror",
+      emoji: "🧠",
+    },
+    treasuryFavs >= 10 && { id: "poetry-lover", name: "Poetry Lover", emoji: "❤️" },
+    completedDays.length >= 5 && {
+      id: "cultural-explorer",
+      name: "Cultural Explorer",
+      emoji: "🌙",
+    },
+    completedDays.length >= 40 && { id: "urdu-devotee", name: "Urdu Devotee", emoji: "👑" },
+    streak >= 7 && { id: "daily-champion", name: "Daily Champion", emoji: "⭐" },
+  ].filter(Boolean) as { id: string; name: string; emoji: string }[];
+  const previewBadges = unlockedBadges.slice(0, 3);
+  const trackName =
+    activeTrack === "learn40"
+      ? "Learn Urdu in 40 Days"
+      : activeTrack === "revive"
+        ? "Revive Your Urdu"
+        : null;
 
   return (
     <>
@@ -190,39 +238,154 @@ function SharedNav() {
               </>
             )}
             {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose/10 text-rose text-xs font-semibold hover:bg-rose/20 transition-colors"
+              <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+                <SheetTrigger asChild>
+                  <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose/10 text-rose text-xs font-semibold hover:bg-rose/20 transition-colors">
+                    <span className="size-5 rounded-full bg-rose text-paper flex items-center justify-center text-[10px] font-bold">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
+                    <ChevronDown className="size-3" />
+                  </button>
+                </SheetTrigger>
+                <SheetContent
+                  side="right"
+                  className="w-full sm:w-[320px] p-0 bg-card border-l border-ink/5"
                 >
-                  <span className="size-5 rounded-full bg-rose text-paper flex items-center justify-center text-[10px] font-bold">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
-                  <ChevronDown className="size-3" />
-                </button>
-                {showUserMenu && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-48 bg-card border border-ink/10 rounded-xl shadow-lg py-2 z-50">
-                      <div className="px-4 py-2 border-b border-ink/5">
-                        <p className="text-xs font-semibold truncate">{user.name}</p>
-                        <p className="text-[10px] text-ink/40 truncate">{user.email}</p>
+                  <SheetTitle className="sr-only">Profile</SheetTitle>
+                  <SheetDescription className="sr-only">User profile drawer</SheetDescription>
+
+                  {/* Profile Section */}
+                  <div className="px-6 pt-10 pb-6 border-b border-ink/5">
+                    <div className="flex items-center gap-4">
+                      <span className="size-12 rounded-full bg-rose text-paper flex items-center justify-center text-lg font-bold font-display">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                      <div>
+                        <p className="font-display text-base font-semibold">{user.name}</p>
+                        <p className="text-xs text-ink/40 truncate mt-0.5">{user.email}</p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Current Track & Progress */}
+                  <div className="px-6 py-5 border-b border-ink/5 space-y-4">
+                    {trackName && (
+                      <div className="rounded-2xl bg-teal/5 border border-teal/10 p-3.5">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-teal mb-1">
+                          Current Track
+                        </div>
+                        <p className="text-xs font-semibold mb-1.5 truncate">{trackName}</p>
+                        <div className="flex items-center justify-between text-[10px] text-ink/40 mb-1.5">
+                          <span>Progress</span>
+                          <span>
+                            {completedDays.length}/{totalDays} Days
+                          </span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-ink/5">
+                          <div
+                            className="h-full rounded-full bg-teal transition-all"
+                            style={{
+                              width: `${totalDays > 0 ? (completedDays.length / totalDays) * 100 : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {!trackName && (
+                      <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-ink/40">
+                        No active track
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick Navigation */}
+                  <div className="px-6 py-5 border-b border-ink/5">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-rose mb-3">
+                      Quick Navigation
+                    </div>
+                    <div className="space-y-1">
+                      <Link
+                        to="/my-progress"
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors"
+                      >
+                        <ChartLine className="size-4" />
+                        My Progress
+                      </Link>
+                      <Link
+                        to="/my-dictionary"
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors"
+                      >
+                        <BookMarked className="size-4" />
+                        My Dictionary
+                      </Link>
+                      <Link
+                        to="/todays-mission"
+                        onClick={() => setDrawerOpen(false)}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors"
+                      >
+                        <Target className="size-4" />
+                        Today's Mission
+                      </Link>
                       <button
                         onClick={() => {
-                          logOut();
-                          setShowUserMenu(false);
+                          toast.info("Settings — coming soon!");
+                          setDrawerOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-xs text-rose hover:bg-ink/5 transition-colors"
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-ink/70 hover:text-ink hover:bg-ink/5 transition-colors"
                       >
-                        <LogOut className="size-3.5" />
-                        Log Out
+                        <Settings className="size-4" />
+                        Settings
                       </button>
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
+
+                  {/* Achievements Preview */}
+                  <div className="px-6 py-5 border-b border-ink/5">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-teal mb-3">
+                      Achievements ({unlockedBadges.length}/10)
+                    </div>
+                    {previewBadges.length > 0 ? (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {previewBadges.map((badge) => (
+                          <span
+                            key={badge.id}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-teal/10 text-teal text-[10px] font-semibold"
+                          >
+                            <span className="text-xs">{badge.emoji}</span>
+                            {badge.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-ink/30 mb-3">No badges unlocked yet</p>
+                    )}
+                    <Link
+                      to="/my-progress"
+                      onClick={() => setDrawerOpen(false)}
+                      className="flex items-center gap-2 text-[10px] font-semibold text-teal hover:text-teal/80 transition-colors"
+                    >
+                      View All Achievements →
+                    </Link>
+                  </div>
+
+                  {/* Log Out */}
+                  <div className="px-6 py-4">
+                    <button
+                      onClick={() => {
+                        logOut();
+                        setDrawerOpen(false);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-rose hover:bg-rose/5 transition-colors"
+                    >
+                      <LogOut className="size-4" />
+                      Log Out
+                    </button>
+                  </div>
+                </SheetContent>
+              </Sheet>
             ) : (
               <div className="flex items-center gap-1.5">
                 <button
@@ -261,8 +424,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppStateProvider>
-        <SharedNav />
-        <Outlet />
+        <FavoritesProvider>
+          <DifficultWordsProvider>
+            <SharedNav />
+            <Outlet />
+            <Toaster />
+          </DifficultWordsProvider>
+        </FavoritesProvider>
       </AppStateProvider>
     </QueryClientProvider>
   );

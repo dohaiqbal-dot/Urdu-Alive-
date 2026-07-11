@@ -1,5 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Sparkles, BookOpen, Library, ScrollText, Flame, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  Sparkles,
+  BookOpen,
+  Library,
+  ScrollText,
+  Flame,
+  Zap,
+  Target,
+  Check,
+  Lock,
+} from "lucide-react";
 import { useAppState } from "@/context/AppState";
 import { DashboardStats } from "@/components/StatRing";
 
@@ -17,8 +29,34 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+const milestones = [
+  { name: "Beginner", range: [1, 10] as const },
+  { name: "Survival", range: [11, 20] as const },
+  { name: "Social", range: [21, 30] as const },
+  { name: "Fluent Foundations", range: [31, 40] as const },
+];
+
+function getMilestoneInfo(currentDay: number) {
+  const milestone = milestones.find((m) => currentDay >= m.range[0] && currentDay <= m.range[1]);
+  const milestoneIndex = milestone ? milestones.indexOf(milestone) : -1;
+  const daysInMilestone = milestone ? milestone.range[1] - milestone.range[0] + 1 : 10;
+  const daysDoneInMilestone = milestone ? currentDay - milestone.range[0] + 1 : 1;
+  const progressInMilestone = Math.round((daysDoneInMilestone / daysInMilestone) * 100);
+  const nextMilestone = milestones[milestoneIndex + 1];
+  const daysRemaining = 40 - currentDay;
+  return {
+    currentMilestone: milestone || null,
+    milestoneIndex,
+    progressInMilestone,
+    nextMilestone: nextMilestone || null,
+    nextMilestoneDay: nextMilestone?.range[0] || 40,
+    daysRemaining,
+    currentDay,
+  };
+}
+
 function Index() {
-  const { activeTrack, setActiveTrack, isTrackLocked } = useAppState();
+  const { activeTrack, setActiveTrack, isTrackLocked, currentDay, completedDays } = useAppState();
 
   const handleTrackSelect = (track: "revive" | "learn40") => {
     if (!isTrackLocked) {
@@ -34,6 +72,11 @@ function Index() {
         activeTrack={activeTrack}
       />
       <StatsSection />
+      <LearningPathSection
+        currentDay={currentDay}
+        completedDays={completedDays}
+        activeTrack={activeTrack}
+      />
       <TracksSection
         onTrackSelect={handleTrackSelect}
         isTrackLocked={isTrackLocked}
@@ -53,6 +96,10 @@ function Hero({
   isTrackLocked: boolean;
   activeTrack: "revive" | "learn40" | null;
 }) {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
   return (
     <section className="relative overflow-hidden">
       <div className="absolute -top-32 -left-32 size-[28rem] rounded-full bg-saffron/30 blur-3xl pointer-events-none" />
@@ -81,7 +128,7 @@ function Hero({
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {!isTrackLocked || activeTrack === "learn40" ? (
+            {hydrated && (!isTrackLocked || activeTrack === "learn40") ? (
               <Link
                 to="/learn-40-days"
                 onClick={() => onTrackSelect("learn40")}
@@ -91,7 +138,7 @@ function Hero({
                 Start Learning Urdu
               </Link>
             ) : null}
-            {!isTrackLocked || activeTrack === "revive" ? (
+            {hydrated && (!isTrackLocked || activeTrack === "revive") ? (
               <Link
                 to="/revive-urdu"
                 onClick={() => onTrackSelect("revive")}
@@ -101,6 +148,13 @@ function Hero({
                 Revive Your Urdu
               </Link>
             ) : null}
+            <Link
+              to="/todays-mission"
+              className="inline-flex items-center gap-2 px-5 py-3.5 bg-indigo-deep text-paper font-semibold rounded-full shadow-lg shadow-indigo-deep/30 hover:shadow-xl hover:-translate-y-0.5 transition-all"
+            >
+              <Target className="size-4" />
+              Today's Mission
+            </Link>
           </div>
 
           <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
@@ -138,6 +192,157 @@ function StatsSection() {
         <div className="flex gap-6 sm:gap-8 [&>div]:text-paper">
           <DashboardStats />
         </div>
+      </div>
+    </section>
+  );
+}
+
+function LearningPathSection({
+  currentDay,
+  completedDays,
+  activeTrack,
+}: {
+  currentDay: number;
+  completedDays: number[];
+  activeTrack: "revive" | "learn40" | null;
+}) {
+  const info = getMilestoneInfo(currentDay);
+  const hasTrack = activeTrack !== null;
+
+  return (
+    <section className="py-16 px-6 bg-ink/3">
+      <div className="max-w-5xl mx-auto">
+        <div className="text-center sm:text-left mb-10">
+          <div className="text-xs font-mono uppercase tracking-[0.25em] text-rose mb-3">
+            Your Journey
+          </div>
+          <h2 className="font-display text-3xl md:text-4xl leading-tight tracking-tight">
+            Your Urdu <span className="italic text-rose">Journey</span>
+          </h2>
+          <p className="mt-2 text-sm text-ink/50 max-w-lg">
+            Track your progression through 40 days of learning Urdu.
+          </p>
+        </div>
+
+        {!hasTrack ? (
+          <div className="rounded-3xl bg-card border border-ink/5 p-8 text-center">
+            <div className="size-14 mx-auto mb-4 rounded-full bg-ink/5 flex items-center justify-center">
+              <Lock className="size-6 text-ink/30" />
+            </div>
+            <p className="font-display text-lg text-ink/60 mb-1">
+              Start a learning track to unlock your journey
+            </p>
+            <p className="text-sm text-ink/40">
+              Choose Learn Urdu in 40 Days or Revive Your Urdu above to begin.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* Roadmap */}
+            <div className="lg:col-span-3">
+              <div className="rounded-3xl bg-card border border-ink/5 p-6 md:p-8">
+                <div className="flex items-center justify-between">
+                  {milestones.map((m, i) => {
+                    const isCompleted = currentDay > m.range[1];
+                    const isActive = currentDay >= m.range[0] && currentDay <= m.range[1];
+                    const isLocked = currentDay < m.range[0];
+                    return (
+                      <div key={m.name} className="flex flex-col items-center gap-2 flex-1">
+                        <div className="relative">
+                          <div
+                            className={`size-12 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              isCompleted
+                                ? "bg-teal text-paper"
+                                : isActive
+                                  ? "bg-rose text-paper animate-pulse shadow-lg shadow-rose/30"
+                                  : "bg-ink/5 text-ink/30 border-2 border-ink/10"
+                            }`}
+                          >
+                            {isCompleted ? (
+                              <Check className="size-5" />
+                            ) : isActive ? (
+                              <span className="font-display font-bold text-sm">{currentDay}</span>
+                            ) : (
+                              <Lock className="size-4" />
+                            )}
+                          </div>
+                        </div>
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-wider text-center ${
+                            isCompleted ? "text-teal" : isActive ? "text-rose" : "text-ink/30"
+                          }`}
+                        >
+                          {m.name}
+                        </span>
+                        <span className="text-[9px] text-ink/30 font-mono">
+                          Days {m.range[0]}-{m.range[1]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Connecting line */}
+                <div className="relative mt-2">
+                  <div className="absolute top-0 left-[12.5%] right-[12.5%] h-0.5 bg-ink/5">
+                    <div
+                      className="h-full bg-teal transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, (currentDay / 40) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Info Panel */}
+            <div className="lg:col-span-2">
+              <div className="rounded-3xl bg-card border border-ink/5 p-6 md:p-8">
+                <div className="text-[10px] font-mono uppercase tracking-[0.25em] text-rose mb-4">
+                  Progress Overview
+                </div>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-ink/50">Stage</span>
+                    <span className="text-sm font-semibold font-display">
+                      {info.currentMilestone?.name || "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-ink/50">Current Day</span>
+                    <span className="text-sm font-semibold font-display">{currentDay}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-ink/50">Days Remaining</span>
+                    <span className="text-sm font-semibold font-display text-rose">
+                      {info.daysRemaining}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-ink/50">Next Milestone</span>
+                    <span className="text-sm font-semibold font-display">
+                      {info.nextMilestone ? `Day ${info.nextMilestone.range[0]}` : "Complete!"}
+                    </span>
+                  </div>
+                  <div className="pt-3 border-t border-ink/5">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-xs text-ink/50">Progress to Next Milestone</span>
+                      <span className="text-xs font-bold text-teal">
+                        {info.currentMilestone ? `${info.progressInMilestone}%` : "—"}
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-ink/5">
+                      <div
+                        className="h-full rounded-full bg-teal transition-all duration-500"
+                        style={{ width: `${info.progressInMilestone}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

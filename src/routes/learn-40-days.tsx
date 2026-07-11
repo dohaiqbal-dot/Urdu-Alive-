@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Volume2,
   RotateCcw,
@@ -12,8 +13,10 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { useAppState } from "@/context/AppState";
-import { useSpeech } from "@/hooks/useSpeech";
+import { useUrduSpeech } from "@/hooks/useUrduSpeech";
 import { learn40Data, type LearnWord } from "@/content/learn40-data";
+import { FavoriteButton } from "@/components/FavoriteButton";
+import { MarkDifficultButton } from "@/components/MarkDifficultButton";
 
 export const Route = createFileRoute("/learn-40-days")({
   head: () => ({
@@ -103,7 +106,10 @@ function Learn40DaysPage() {
     markDayComplete,
     addXP,
   } = useAppState();
-  const { speak, stop, loading } = useSpeech();
+  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  useEffect(() => {
+    if (error) toast.error(error, { id: "urdu-voice" });
+  }, [error]);
   const [view, setView] = useState<"list" | "practice">("list");
   const [flashcardIndex, setFlashcardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -309,16 +315,18 @@ function Learn40DaysPage() {
               <>
                 <div className="rounded-2xl border border-ink/5 overflow-hidden mb-8">
                   {/* Table Header */}
-                  <div className="grid grid-cols-[1fr_1fr_auto] gap-4 px-5 py-3 bg-ink/5 border-b border-ink/5 text-[10px] font-bold uppercase tracking-wider text-ink/40">
+                  <div className="grid grid-cols-[1fr_1fr_auto_auto_auto] gap-4 px-5 py-3 bg-ink/5 border-b border-ink/5 text-[10px] font-bold uppercase tracking-wider text-ink/40">
                     <span>English</span>
                     <span>Roman Urdu</span>
-                    <span className="w-10" />
+                    <span className="w-8" />
+                    <span className="w-8" />
+                    <span className="w-8" />
                   </div>
                   {/* Word Rows */}
                   {dayData.words.map((word, i) => (
                     <div
                       key={word.id}
-                      className={`grid grid-cols-[1fr_1fr_auto] gap-4 px-5 py-3.5 items-center transition-colors hover:bg-ink/3 ${
+                      className={`grid grid-cols-[1fr_1fr_auto_auto_auto] gap-4 px-5 py-3.5 items-center transition-colors hover:bg-ink/3 ${
                         i < dayData.words.length - 1 ? "border-b border-ink/5" : ""
                       }`}
                     >
@@ -326,14 +334,38 @@ function Learn40DaysPage() {
                       <span className="text-sm text-ink/70 italic font-display">
                         {word.romanUrdu}
                       </span>
+                      <FavoriteButton
+                        item={{
+                          id: `learn40-${word.id}`,
+                          urduScript: word.urduScript,
+                          romanUrdu: word.romanUrdu,
+                          meaning: word.english,
+                          source: "learn40",
+                          dayNumber: currentDay,
+                          exampleSentence: word.exampleSentence || undefined,
+                        }}
+                      />
+                      <MarkDifficultButton
+                        item={{
+                          id: `dif-learn40-${word.id}`,
+                          urduScript: word.urduScript,
+                          romanUrdu: word.romanUrdu,
+                          meaning: word.english,
+                          source: "learn40",
+                          dayNumber: currentDay,
+                          exampleSentence: word.exampleSentence || undefined,
+                        }}
+                      />
                       <button
-                        onClick={() => speak(word.romanUrdu, word.urduScript)}
-                        disabled={loading}
+                        onClick={() => speak(word.english)}
                         className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0 disabled:opacity-50"
+                        disabled={loadingText === word.english}
                         title="Listen to pronunciation"
                       >
-                        {loading ? (
+                        {loadingText === word.english ? (
                           <Loader2 className="size-4 animate-spin" />
+                        ) : playingText === word.english ? (
+                          <Volume2 className="size-4 text-rose" />
                         ) : (
                           <Volume2 className="size-4" />
                         )}
@@ -440,13 +472,15 @@ function Learn40DaysPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              speak(flashcards[flashcardIndex].back, flashcards[flashcardIndex].urduScript);
+                              speak(flashcards[flashcardIndex].front);
                             }}
-                            disabled={loading}
                             className="mt-4 size-10 rounded-full bg-paper/20 flex items-center justify-center hover:bg-paper/30 transition-colors disabled:opacity-50"
+                            disabled={loadingText === flashcards[flashcardIndex].front}
                           >
-                            {loading ? (
+                            {loadingText === flashcards[flashcardIndex].front ? (
                               <Loader2 className="size-5 animate-spin" />
+                            ) : playingText === flashcards[flashcardIndex].front ? (
+                              <Volume2 className="size-5" />
                             ) : (
                               <Volume2 className="size-5" />
                             )}

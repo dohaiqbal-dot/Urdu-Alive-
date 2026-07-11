@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { idiomsData } from "@/content/idioms-data";
+import { FavoriteButton } from "@/components/FavoriteButton";
 
 export const Route = createFileRoute("/idioms-stories")({
   head: () => ({
@@ -57,7 +58,16 @@ function IdiomsStoriesPage() {
                     </div>
                     <p className="text-sm text-ink/70 leading-relaxed">{idiom.meaning}</p>
                   </div>
-                  <div className="flex-shrink-0 mt-1">
+                  <div className="flex items-center gap-2 flex-shrink-0 mt-1">
+                    <FavoriteButton
+                      item={{
+                        id: `idioms-${idiom.id}`,
+                        urduScript: idiom.urduScript,
+                        romanUrdu: idiom.romanUrdu,
+                        meaning: idiom.meaning,
+                        source: "idioms",
+                      }}
+                    />
                     {expandedId === idiom.id ? (
                       <ChevronUp className="size-5 text-ink/30" />
                     ) : (
