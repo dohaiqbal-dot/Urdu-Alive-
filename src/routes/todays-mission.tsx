@@ -181,7 +181,7 @@ export const Route = createFileRoute("/todays-mission")({
 function TodaysMissionPage() {
   const { xp, addXP, streak, incrementStreak } = useAppState();
   const { difficultWords } = useDifficultWords();
-  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  const { speak, loadingText, error } = useUrduSpeech();
   useEffect(() => {
     if (error) toast.error(error, { id: "urdu-voice" });
   }, [error]);
@@ -539,12 +539,12 @@ function TodaysMissionPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        speak(w.english);
+                        speak(w.meaning);
                       }}
                       className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0 disabled:opacity-50"
-                      disabled={loadingText === w.english}
+                      disabled={loadingText === w.meaning}
                     >
-                      {loadingText === w.english ? (
+                      {loadingText === w.meaning ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
                         <Volume2 className="size-4" />
@@ -633,12 +633,12 @@ function TodaysMissionPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        speak(w.english);
+                        speak(w.meaning);
                       }}
                       className="size-8 rounded-full bg-rose/10 flex items-center justify-center hover:bg-rose/20 transition-colors text-rose flex-shrink-0 disabled:opacity-50"
-                      disabled={loadingText === w.english}
+                      disabled={loadingText === w.meaning}
                     >
-                      {loadingText === w.english ? (
+                      {loadingText === w.meaning ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : (
                         <Volume2 className="size-4" />

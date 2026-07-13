@@ -6,7 +6,6 @@ import {
   BookOpen,
   Library,
   ScrollText,
-  Flame,
   Zap,
   Target,
   Check,
@@ -128,7 +127,7 @@ function Hero({
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
-            {hydrated && (!isTrackLocked || activeTrack === "learn40") ? (
+            {hydrated ? (
               <Link
                 to="/learn-40-days"
                 onClick={() => onTrackSelect("learn40")}
@@ -138,16 +137,7 @@ function Hero({
                 Start Learning Urdu
               </Link>
             ) : null}
-            {hydrated && (!isTrackLocked || activeTrack === "revive") ? (
-              <Link
-                to="/revive-urdu"
-                onClick={() => onTrackSelect("revive")}
-                className="inline-flex items-center gap-2 pl-5 pr-4 py-3.5 bg-ink text-paper font-semibold rounded-full hover:bg-indigo-deep transition-colors"
-              >
-                <Flame className="size-4 text-saffron" />
-                Revive Your Urdu
-              </Link>
-            ) : null}
+
             <Link
               to="/todays-mission"
               className="inline-flex items-center gap-2 px-5 py-3.5 bg-indigo-deep text-paper font-semibold rounded-full shadow-lg shadow-indigo-deep/30 hover:shadow-xl hover:-translate-y-0.5 transition-all"

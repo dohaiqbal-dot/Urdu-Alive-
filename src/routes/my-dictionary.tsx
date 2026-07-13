@@ -34,7 +34,7 @@ const sourceColors: Record<string, string> = {
 };
 
 function MyDictionaryPage() {
-  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  const { speak, loadingText, error } = useUrduSpeech();
   useEffect(() => {
     if (error) toast.error(error, { id: "urdu-voice" });
   }, [error]);

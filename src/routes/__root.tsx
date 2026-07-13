@@ -200,7 +200,7 @@ function SharedNav() {
             <span className="inline-grid place-items-center size-8 rounded-lg bg-rose text-paper font-display font-bold text-sm shadow-md shadow-rose/25">
               ا
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight hidden sm:inline">
+            <span className="font-display text-lg font-semibold tracking-tight">
               Urdu <span className="italic text-rose">Alive</span>
             </span>
           </Link>

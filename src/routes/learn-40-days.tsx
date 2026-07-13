@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import {
@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
+  Coffee,
+  Moon,
 } from "lucide-react";
 import { useAppState } from "@/context/AppState";
 import { useUrduSpeech } from "@/hooks/useUrduSpeech";
@@ -632,6 +634,34 @@ function Learn40DaysPage() {
               </div>
             )}
           </>
+        ) : currentDay % 5 === 0 ? (
+          <div className="text-center py-12 max-w-lg mx-auto">
+            <div className="size-20 mx-auto mb-6 rounded-full bg-teal/10 flex items-center justify-center">
+              <Coffee className="size-10 text-teal" />
+            </div>
+            <h2 className="font-display text-2xl md:text-3xl text-ink mb-2">
+              Rest Day — You've Earned It
+            </h2>
+            <p className="text-ink/60 text-sm leading-relaxed mb-4">
+              You've worked hard through the first {currentDay - 1} days. Today is a
+              well-deserved break — rest, revise what you've learned, or explore other
+              parts of Urdu Alive.
+            </p>
+            <div className="flex flex-wrap justify-center gap-3 mt-2">
+              <Link
+                to="/urdu-treasury"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal text-paper text-sm font-semibold rounded-full hover:bg-teal/90 transition-colors"
+              >
+                <Sparkles className="size-4" /> Explore Urdu Treasury
+              </Link>
+              <Link
+                to="/todays-mission"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-rose text-paper text-sm font-semibold rounded-full hover:bg-rose/90 transition-colors"
+              >
+                <Moon className="size-4" /> Today's Mission
+              </Link>
+            </div>
+          </div>
         ) : (
           <div className="text-center py-16 text-ink/40">
             <p className="font-display text-xl">Select a day to begin</p>

@@ -8,12 +8,8 @@ import {
   Sparkles,
   ChevronLeft,
   Flag,
-  Quote,
-  Library,
-  ScrollText,
   Star,
   Zap,
-  Calendar,
   GraduationCap,
   Brain,
   Heart,
@@ -303,7 +299,7 @@ function StreakCalendar({
     });
   }
 
-  const weeks: (typeof days)[][] = [];
+  const weeks: (typeof days)[] = [];
   for (let i = 0; i < days.length; i += 7) {
     weeks.push(days.slice(i, i + 7));
   }

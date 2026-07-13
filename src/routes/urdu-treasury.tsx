@@ -22,7 +22,7 @@ export const Route = createFileRoute("/urdu-treasury")({
 });
 
 function UrduTreasuryPage() {
-  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  const { speak, loadingText, error } = useUrduSpeech();
   useEffect(() => {
     if (error) toast.error(error, { id: "urdu-voice" });
   }, [error]);
@@ -125,6 +125,8 @@ function UrduTreasuryPage() {
                 word={word}
                 isExpanded={expandedWord === word.id}
                 onToggle={() => setExpandedWord(expandedWord === word.id ? null : word.id)}
+                speak={speak}
+                loadingText={loadingText}
               />
             ))}
           </div>
@@ -142,10 +144,14 @@ function WordCard({
   word,
   isExpanded,
   onToggle,
+  speak,
+  loadingText,
 }: {
   word: TreasuryWord;
   isExpanded: boolean;
   onToggle: () => void;
+  speak: (text: string) => void;
+  loadingText: string | null;
 }) {
   return (
     <div

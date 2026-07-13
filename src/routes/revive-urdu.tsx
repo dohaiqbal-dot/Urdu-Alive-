@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Volume2, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronUp, Volume2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAppState } from "@/context/AppState";
 import { useUrduSpeech } from "@/hooks/useUrduSpeech";
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/revive-urdu")({
 });
 
 function ReviveUrduPage() {
-  const { speak, loadingText, playingText, error } = useUrduSpeech();
+  const { speak, loadingText, error } = useUrduSpeech();
   useEffect(() => {
     if (error) toast.error(error, { id: "urdu-voice" });
   }, [error]);
@@ -154,6 +154,8 @@ function ReviveUrduPage() {
                   word={word}
                   isExpanded={expandedWord === word.id}
                   onToggle={() => setExpandedWord(expandedWord === word.id ? null : word.id)}
+                  speak={speak}
+                  loadingText={loadingText}
                 />
               ))}
             </div>
@@ -173,10 +175,14 @@ function WordCard({
   word,
   isExpanded,
   onToggle,
+  speak,
+  loadingText,
 }: {
   word: ReviveWord;
   isExpanded: boolean;
   onToggle: () => void;
+  speak: (text: string) => void;
+  loadingText: string | null;
 }) {
   return (
     <div className="rounded-2xl border border-ink/5 bg-card overflow-hidden">
@@ -268,10 +274,10 @@ function WordCard({
               </div>
               <ArrowRight className="size-4 text-rose flex-shrink-0" />
               <div className="flex-1">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600 mb-1">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800 mb-1">
                   After (Urdu)
                 </div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                <p className="text-sm font-bold text-ink dark:text-amber-200">
                   {word.afterSentence}
                 </p>
               </div>
