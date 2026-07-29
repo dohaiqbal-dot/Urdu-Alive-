@@ -27,7 +27,7 @@ function ReviveUrduPage() {
     if (error) toast.error(error, { id: "urdu-voice" });
   }, [error]);
 
-  const { setActiveTrack, isTrackLocked, activeTrack, completedDays, markDayComplete, addXP } =
+  const { setActiveTrack, isTrackLocked, activeTrack, completedDays, markDayComplete, addXP, addWordsLearned } =
     useAppState();
   const [selectedWeek, setSelectedWeek] = useState(0);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -42,8 +42,11 @@ function ReviveUrduPage() {
     selectedDay !== null ? reviveData[selectedWeek]?.days.find((d) => d.day === selectedDay) : null;
 
   const handleDayComplete = (day: number) => {
+    if (completedDays.includes(day)) return;
     markDayComplete(day);
     addXP(50);
+    const dayData = reviveData.flatMap(w => w.days).find(d => d.day === day);
+    if (dayData) addWordsLearned(dayData.words.length);
   };
 
   return (
