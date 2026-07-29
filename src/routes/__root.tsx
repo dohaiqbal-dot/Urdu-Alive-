@@ -22,6 +22,7 @@ import {
   Target,
   Settings,
   ChartLine,
+  Loader2,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -152,10 +153,18 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function getProviderBadge(provider: string): string {
+  switch (provider) {
+    case "google": return "Google";
+    case "email": return "Email";
+    default: return provider;
+  }
+}
+
 function SharedNav() {
   const matches = useMatches();
   const isHome = matches.some((m) => m.pathname === "/");
-  const { user, logOut, completedDays, activeTrack, streak, totalWordsLearned } = useAppState();
+  const { user, logOut, completedDays, activeTrack, streak, totalWordsLearned, sessionLoading } = useAppState();
   const { difficultWords } = useDifficultWords();
   const { favorites } = useFavorites();
   const [authModal, setAuthModal] = useState<"login" | "signup" | null>(null);
@@ -237,14 +246,24 @@ function SharedNav() {
                 </Link>
               </>
             )}
-            {user ? (
+            {sessionLoading ? (
+              <div className="size-8 flex items-center justify-center">
+                <Loader2 className="size-4 animate-spin text-ink/40" />
+              </div>
+            ) : user ? (
               <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <SheetTrigger asChild>
                   <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose/10 text-rose text-xs font-semibold hover:bg-rose/20 transition-colors">
-                    <span className="size-5 rounded-full bg-rose text-paper flex items-center justify-center text-[10px] font-bold">
-                      {user.name.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
+                    {user.name ? (
+                      <span className="size-5 rounded-full bg-rose text-paper flex items-center justify-center text-[10px] font-bold overflow-hidden">
+                        {user.name.charAt(0).toUpperCase()}
+                      </span>
+                    ) : (
+                      <span className="size-5 rounded-full bg-rose text-paper flex items-center justify-center text-[10px] font-bold">
+                        ?
+                      </span>
+                    )}
+                    <span className="hidden sm:inline">{user.name?.split(" ")[0] || "User"}</span>
                     <ChevronDown className="size-3" />
                   </button>
                 </SheetTrigger>
@@ -258,12 +277,15 @@ function SharedNav() {
                   {/* Profile Section */}
                   <div className="px-6 pt-10 pb-6 border-b border-ink/5">
                     <div className="flex items-center gap-4">
-                      <span className="size-12 rounded-full bg-rose text-paper flex items-center justify-center text-lg font-bold font-display">
-                        {user.name.charAt(0).toUpperCase()}
+                      <span className="size-12 rounded-full bg-rose text-paper flex items-center justify-center text-lg font-bold font-display overflow-hidden">
+                        {user.name?.charAt(0).toUpperCase() || "?"}
                       </span>
                       <div>
                         <p className="font-display text-base font-semibold">{user.name}</p>
                         <p className="text-xs text-ink/40 truncate mt-0.5">{user.email}</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-ink/5 text-[10px] font-semibold text-ink/40 mt-1">
+                          {getProviderBadge("email")}
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -17,6 +17,8 @@ import { Route as MyDictionaryRouteImport } from './routes/my-dictionary'
 import { Route as Learn40DaysRouteImport } from './routes/learn-40-days'
 import { Route as IdiomsStoriesRouteImport } from './routes/idioms-stories'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
+import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 
 const UrduTreasuryRoute = UrduTreasuryRouteImport.update({
   id: '/urdu-treasury',
@@ -58,6 +60,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +80,8 @@ export interface FileRoutesByFullPath {
   '/revive-urdu': typeof ReviveUrduRoute
   '/todays-mission': typeof TodaysMissionRoute
   '/urdu-treasury': typeof UrduTreasuryRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +92,8 @@ export interface FileRoutesByTo {
   '/revive-urdu': typeof ReviveUrduRoute
   '/todays-mission': typeof TodaysMissionRoute
   '/urdu-treasury': typeof UrduTreasuryRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +105,8 @@ export interface FileRoutesById {
   '/revive-urdu': typeof ReviveUrduRoute
   '/todays-mission': typeof TodaysMissionRoute
   '/urdu-treasury': typeof UrduTreasuryRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +119,8 @@ export interface FileRouteTypes {
     | '/revive-urdu'
     | '/todays-mission'
     | '/urdu-treasury'
+    | '/auth/callback'
+    | '/auth/reset-password'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +131,8 @@ export interface FileRouteTypes {
     | '/revive-urdu'
     | '/todays-mission'
     | '/urdu-treasury'
+    | '/auth/callback'
+    | '/auth/reset-password'
   id:
     | '__root__'
     | '/'
@@ -121,6 +143,8 @@ export interface FileRouteTypes {
     | '/revive-urdu'
     | '/todays-mission'
     | '/urdu-treasury'
+    | '/auth/callback'
+    | '/auth/reset-password'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +156,8 @@ export interface RootRouteChildren {
   ReviveUrduRoute: typeof ReviveUrduRoute
   TodaysMissionRoute: typeof TodaysMissionRoute
   UrduTreasuryRoute: typeof UrduTreasuryRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +218,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +244,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReviveUrduRoute: ReviveUrduRoute,
   TodaysMissionRoute: TodaysMissionRoute,
   UrduTreasuryRoute: UrduTreasuryRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
