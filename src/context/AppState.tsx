@@ -17,6 +17,7 @@ interface AppState {
   xp: number;
   addXP: (amount: number) => void;
   streak: number;
+  longestStreak: number;
   incrementStreak: () => void;
   currentDay: number;
   setCurrentDay: (day: number) => void;
@@ -62,6 +63,7 @@ function loadState(): Partial<AppState> {
 function saveState(state: {
   xp: number;
   streak: number;
+  longestStreak: number;
   currentDay: number;
   activeTrack: Track;
   completedDays: number[];
@@ -86,6 +88,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [activeTrack, setActiveTrack] = useState<Track>(() => saved.activeTrack ?? null);
   const [completedDays, setCompletedDays] = useState<number[]>(() => saved.completedDays ?? []);
   const [totalWordsLearned, setTotalWordsLearned] = useState(() => saved.totalWordsLearned ?? 0);
+  const [longestStreak, setLongestStreak] = useState(() => saved.longestStreak ?? 0);
   const [user, setUser] = useState<User | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
@@ -104,6 +107,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           if (progress) {
             setXP(progress.xp);
             setStreak(progress.streak);
+            setLongestStreak(progress.longest_streak);
             setCurrentDay(progress.current_day);
             setActiveTrack(progress.active_track as Track);
             setCompletedDays(progress.completed_days ?? []);
@@ -129,6 +133,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             if (progress) {
               setXP(progress.xp);
               setStreak(progress.streak);
+              setLongestStreak(progress.longest_streak);
               setCurrentDay(progress.current_day);
               setActiveTrack(progress.active_track as Track);
               setCompletedDays(progress.completed_days ?? []);
@@ -144,6 +149,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
           const cached = loadState();
           setXP(cached.xp ?? 0);
           setStreak(cached.streak ?? 0);
+          setLongestStreak(cached.longestStreak ?? 0);
           setCurrentDay(cached.currentDay ?? 1);
           setActiveTrack(cached.activeTrack ?? null);
           setCompletedDays(cached.completedDays ?? []);
@@ -160,21 +166,26 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const p = {
       xp,
       streak,
+      longest_streak: longestStreak,
       current_day: currentDay,
       active_track: activeTrack,
       completed_days: completedDays,
       total_words_learned: totalWordsLearned,
     };
     upsertProgress(user.id, p).catch(console.error);
-    saveState({ xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned });
-  }, [xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned, user]);
+    saveState({ xp, streak, longestStreak, currentDay, activeTrack, completedDays, totalWordsLearned });
+  }, [xp, streak, longestStreak, currentDay, activeTrack, completedDays, totalWordsLearned, user]);
 
   const addXP = useCallback((amount: number) => {
     setXP((prev) => prev + amount);
   }, []);
 
   const incrementStreak = useCallback(() => {
-    setStreak((prev) => prev + 1);
+    setStreak((prev) => {
+      const next = prev + 1;
+      setLongestStreak((current) => Math.max(current, next));
+      return next;
+    });
   }, []);
 
   const markDayComplete = useCallback((day: number) => {
@@ -266,7 +277,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   return (
     <AppStateContext.Provider
       value={{
-        uuid, xp, addXP, streak, incrementStreak,
+        uuid, xp, addXP, streak, longestStreak, incrementStreak,
         currentDay, setCurrentDay, activeTrack, setActiveTrack,
         completedDays, markDayComplete, isTrackLocked,
         totalWordsLearned, addWordsLearned,
