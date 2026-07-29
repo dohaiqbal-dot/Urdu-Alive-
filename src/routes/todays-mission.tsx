@@ -19,6 +19,7 @@ import {
 import { useAppState } from "@/context/AppState";
 import { useDifficultWords } from "@/context/DifficultWordsContext";
 import { useUrduSpeech } from "@/hooks/useUrduSpeech";
+import { upsertDailyMissions } from "@/lib/supabase-service";
 import { learn40Data } from "@/content/learn40-data";
 import { reviveData } from "@/content/revive-urdu-data";
 import { allTreasuryWords } from "@/content/treasury-data";
@@ -179,7 +180,7 @@ export const Route = createFileRoute("/todays-mission")({
 });
 
 function TodaysMissionPage() {
-  const { xp, addXP, streak, incrementStreak } = useAppState();
+  const { xp, addXP, streak, incrementStreak, user } = useAppState();
   const { difficultWords } = useDifficultWords();
   const { speak, loadingText, error } = useUrduSpeech();
   useEffect(() => {
@@ -244,6 +245,9 @@ function TodaysMissionPage() {
     if (missions && missions.date === today) {
       saveMissions(missions);
       setLastMissionDate(today);
+      if (user) {
+        upsertDailyMissions(user.id, today, missions as unknown as Record<string, unknown>).catch(console.error);
+      }
     }
   }, [missions]);
 
