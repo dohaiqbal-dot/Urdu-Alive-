@@ -8,8 +8,14 @@ interface StatRingProps {
   icon: React.ReactNode;
 }
 
-export function StatRing({ value, label, max = 100, color, icon }: StatRingProps) {
-  const percentage = Math.min((value / max) * 100, 100);
+function calcMax(value: number, baseMax: number): number {
+  const levels = Math.ceil(value / baseMax);
+  return levels > 1 ? levels * baseMax : baseMax;
+}
+
+export function StatRing({ value, label, max, color, icon }: StatRingProps) {
+  const effectiveMax = max ?? calcMax(value, 100);
+  const percentage = Math.min((value / effectiveMax) * 100, 100);
   const radius = 36;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
