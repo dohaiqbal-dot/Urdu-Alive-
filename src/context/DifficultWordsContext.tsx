@@ -5,8 +5,16 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
+import { useAppState } from "./AppState";
+import {
+  getDifficultWords,
+  addDifficultWord as addDifficultToSupabase,
+  removeDifficultWord as removeDifficultFromSupabase,
+  incrementDifficultWordCount as incrementDifficultCount,
+} from "@/lib/supabase-service";
 
 const DIFFICULT_KEY = "urdu-alive-difficult-words";
 
@@ -50,28 +58,70 @@ interface DifficultWordsContextType {
 const DifficultWordsContext = createContext<DifficultWordsContextType | null>(null);
 
 export function DifficultWordsProvider({ children }: { children: ReactNode }) {
+  const { user } = useAppState();
   const [difficultWords, setDifficultWords] = useState<DifficultWord[]>(loadDifficult);
+  const loadedFromSupabase = useRef(false);
 
   useEffect(() => {
     saveDifficult(difficultWords);
   }, [difficultWords]);
 
-  const addDifficult = useCallback((item: Omit<DifficultWord, "savedAt" | "wrongCount">) => {
-    setDifficultWords((prev) => {
-      if (prev.some((f) => f.id === item.id)) return prev;
-      return [{ ...item, savedAt: Date.now(), wrongCount: 0 }, ...prev];
-    });
-  }, []);
+  useEffect(() => {
+    if (!user) {
+      loadedFromSupabase.current = false;
+      return;
+    }
+    if (loadedFromSupabase.current) return;
+    loadedFromSupabase.current = true;
 
-  const removeDifficult = useCallback((id: string) => {
-    setDifficultWords((prev) => prev.filter((f) => f.id !== id));
-  }, []);
+    getDifficultWords(user.id).then((rows) => {
+      if (rows.length > 0) {
+        const items: DifficultWord[] = rows.map((r) => r.word_data as unknown as DifficultWord);
+        setDifficultWords(items);
+        saveDifficult(items);
+      }
+    }).catch(console.error);
+  }, [user]);
 
-  const incrementWrongCount = useCallback((id: string) => {
-    setDifficultWords((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, wrongCount: w.wrongCount + 1 } : w)),
-    );
-  }, []);
+  const addDifficult = useCallback(
+    (item: Omit<DifficultWord, "savedAt" | "wrongCount">) => {
+      setDifficultWords((prev) => {
+        if (prev.some((f) => f.id === item.id)) return prev;
+        const newItem = { ...item, savedAt: Date.now(), wrongCount: 0 };
+        if (user) {
+          addDifficultToSupabase(user.id, item).catch(console.error);
+        }
+        return [newItem, ...prev];
+      });
+    },
+    [user],
+  );
+
+  const removeDifficult = useCallback(
+    (id: string) => {
+      setDifficultWords((prev) => {
+        const filtered = prev.filter((f) => f.id !== id);
+        if (user) {
+          removeDifficultFromSupabase(user.id, id).catch(console.error);
+        }
+        return filtered;
+      });
+    },
+    [user],
+  );
+
+  const incrementWrongCount = useCallback(
+    (id: string) => {
+      setDifficultWords((prev) => {
+        const word = prev.find((w) => w.id === id);
+        if (word && user) {
+          incrementDifficultCount(user.id, id).catch(console.error);
+        }
+        return prev.map((w) => (w.id === id ? { ...w, wrongCount: w.wrongCount + 1 } : w));
+      });
+    },
+    [user],
+  );
 
   const value = useMemo(
     () => ({

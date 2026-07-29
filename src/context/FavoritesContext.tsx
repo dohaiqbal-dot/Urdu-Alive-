@@ -5,8 +5,11 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   type ReactNode,
 } from "react";
+import { useAppState } from "./AppState";
+import { getFavorites, addFavorite as addFavoriteToSupabase, removeFavorite as removeFavoriteFromSupabase } from "@/lib/supabase-service";
 
 const FAVORITES_KEY = "urdu-alive-favorites";
 
@@ -48,22 +51,57 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
+  const { user } = useAppState();
   const [favorites, setFavorites] = useState<FavoriteItem[]>(loadFavorites);
+  const loadedFromSupabase = useRef(false);
 
   useEffect(() => {
     saveFavorites(favorites);
   }, [favorites]);
 
-  const addFavorite: (item: Omit<FavoriteItem, "savedAt">) => void = useCallback((item) => {
-    setFavorites((prev) => {
-      if (prev.some((f) => f.id === item.id)) return prev;
-      return [{ ...item, savedAt: Date.now() }, ...prev];
-    });
-  }, []);
+  useEffect(() => {
+    if (!user) {
+      loadedFromSupabase.current = false;
+      return;
+    }
+    if (loadedFromSupabase.current) return;
+    loadedFromSupabase.current = true;
 
-  const removeFavorite = useCallback((id: string) => {
-    setFavorites((prev) => prev.filter((f) => f.id !== id));
-  }, []);
+    getFavorites(user.id).then((rows) => {
+      if (rows.length > 0) {
+        const items: FavoriteItem[] = rows.map((r) => r.word_data as unknown as FavoriteItem);
+        setFavorites(items);
+        saveFavorites(items);
+      }
+    }).catch(console.error);
+  }, [user]);
+
+  const addFavorite: (item: Omit<FavoriteItem, "savedAt">) => void = useCallback(
+    (item) => {
+      setFavorites((prev) => {
+        if (prev.some((f) => f.id === item.id)) return prev;
+        const newItem = { ...item, savedAt: Date.now() };
+        if (user) {
+          addFavoriteToSupabase(user.id, item).catch(console.error);
+        }
+        return [newItem, ...prev];
+      });
+    },
+    [user],
+  );
+
+  const removeFavorite = useCallback(
+    (id: string) => {
+      setFavorites((prev) => {
+        const filtered = prev.filter((f) => f.id !== id);
+        if (user) {
+          removeFavoriteFromSupabase(user.id, id).catch(console.error);
+        }
+        return filtered;
+      });
+    },
+    [user],
+  );
 
   const value = useMemo(
     () => ({

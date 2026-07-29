@@ -1,4 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { supabase } from "@/lib/supabase";
+import { getProfile, getProgress, upsertProgress } from "@/lib/supabase-service";
+import { hasLegacyData, migrateLocalStorageToSupabase } from "@/lib/migrate-local-storage";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 type Track = "revive" | "learn40" | null;
 
@@ -24,13 +28,16 @@ interface AppState {
   totalWordsLearned: number;
   addWordsLearned: (count: number) => void;
   user: User | null;
-  signUp: (name: string, email: string, password: string) => boolean;
-  logIn: (email: string, password: string) => boolean;
-  logOut: () => void;
+  sessionLoading: boolean;
+  emailConfirmationRequired: boolean;
+  signUp: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const STORAGE_KEY = "urdu-alive-state";
-const USERS_KEY = "urdu-alive-users";
 const AUTH_KEY = "urdu-alive-auth";
 
 function generateUUID(): string {
@@ -64,40 +71,8 @@ function saveState(state: {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function loadUsers(): Record<string, { name: string; email: string; password: string }> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(USERS_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-function saveUsers(users: Record<string, { name: string; email: string; password: string }>) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
-function loadAuthUser(): User | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(AUTH_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function saveAuthUser(user: User | null) {
-  if (typeof window === "undefined") return;
-  if (user) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  } else {
-    localStorage.removeItem(AUTH_KEY);
-  }
+function supabaseUserToUser(su: SupabaseUser, name: string): User {
+  return { id: su.id, name, email: su.email ?? "" };
 }
 
 const AppStateContext = createContext<AppState | null>(null);
@@ -111,9 +86,88 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [activeTrack, setActiveTrack] = useState<Track>(() => saved.activeTrack ?? null);
   const [completedDays, setCompletedDays] = useState<number[]>(() => saved.completedDays ?? []);
   const [totalWordsLearned, setTotalWordsLearned] = useState(() => saved.totalWordsLearned ?? 0);
-  const [user, setUser] = useState<User | null>(() => loadAuthUser());
+  const [user, setUser] = useState<User | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
+  const [emailConfirmationRequired, setEmailConfirmationRequired] = useState(false);
+  const initRef = useRef(false);
+  const migratedRef = useRef(false);
 
   const isTrackLocked = activeTrack !== null;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await getProfile(session.user.id);
+        if (profile) {
+          setUser(supabaseUserToUser(session.user, profile.name));
+          const progress = await getProgress(session.user.id);
+          if (progress) {
+            setXP(progress.xp);
+            setStreak(progress.streak);
+            setCurrentDay(progress.current_day);
+            setActiveTrack(progress.active_track as Track);
+            setCompletedDays(progress.completed_days ?? []);
+            setTotalWordsLearned(progress.total_words_learned);
+          }
+          if (!migratedRef.current && hasLegacyData()) {
+            migratedRef.current = true;
+            await migrateLocalStorageToSupabase(session.user.id);
+          }
+        }
+      }
+      initRef.current = true;
+      setSessionLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === "SIGNED_IN" && session?.user) {
+          const profile = await getProfile(session.user.id);
+          if (profile) {
+            setUser(supabaseUserToUser(session.user, profile.name));
+            const progress = await getProgress(session.user.id);
+            if (progress) {
+              setXP(progress.xp);
+              setStreak(progress.streak);
+              setCurrentDay(progress.current_day);
+              setActiveTrack(progress.active_track as Track);
+              setCompletedDays(progress.completed_days ?? []);
+              setTotalWordsLearned(progress.total_words_learned);
+            }
+            if (!migratedRef.current && hasLegacyData()) {
+              migratedRef.current = true;
+              await migrateLocalStorageToSupabase(session.user.id);
+            }
+          }
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+          const cached = loadState();
+          setXP(cached.xp ?? 0);
+          setStreak(cached.streak ?? 0);
+          setCurrentDay(cached.currentDay ?? 1);
+          setActiveTrack(cached.activeTrack ?? null);
+          setCompletedDays(cached.completedDays ?? []);
+          setTotalWordsLearned(cached.totalWordsLearned ?? 0);
+        }
+      },
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!initRef.current || !user) return;
+    const p = {
+      xp,
+      streak,
+      current_day: currentDay,
+      active_track: activeTrack,
+      completed_days: completedDays,
+      total_words_learned: totalWordsLearned,
+    };
+    upsertProgress(user.id, p).catch(console.error);
+    saveState({ xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned });
+  }, [xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned, user]);
 
   const addXP = useCallback((amount: number) => {
     setXP((prev) => prev + amount);
@@ -134,75 +188,90 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setTotalWordsLearned((prev) => prev + count);
   }, []);
 
-  const signUp = useCallback((name: string, email: string, password: string) => {
-    const users = loadUsers();
-    const emailKey = email.toLowerCase().trim();
-    if (users[emailKey]) return false;
-    users[emailKey] = { name, email: emailKey, password };
-    saveUsers(users);
-    const newUser: User = {
-      id: crypto.randomUUID?.() || Date.now().toString(),
-      name,
-      email: emailKey,
-    };
-    setUser(newUser);
-    saveAuthUser(newUser);
-    return true;
-  }, []);
-
-  const logIn = useCallback((email: string, password: string) => {
-    const users = loadUsers();
-    const emailKey = email.toLowerCase().trim();
-    const found = users[emailKey];
-    if (!found || found.password !== password) return false;
-    const loggedIn: User = {
-      id: crypto.randomUUID?.() || Date.now().toString(),
-      name: found.name,
-      email: emailKey,
-    };
-    setUser(loggedIn);
-    saveAuthUser(loggedIn);
-    return true;
-  }, []);
-
-  const logOut = useCallback(() => {
-    setUser(null);
-    saveAuthUser(null);
-  }, []);
-
-  // Persist state
-  useEffect(() => {
-    saveState({
-      xp,
-      streak,
-      currentDay,
-      activeTrack,
-      completedDays,
-      totalWordsLearned,
+  const signUp = useCallback(async (name: string, email: string, password: string) => {
+    setEmailConfirmationRequired(false);
+    const { data, error } = await supabase.auth.signUp({
+      email: email.toLowerCase().trim(),
+      password,
+      options: { data: { full_name: name.trim() } },
     });
-  }, [xp, streak, currentDay, activeTrack, completedDays, totalWordsLearned]);
+    if (error) {
+      if (error.message.includes("already registered")) {
+        return { success: false, error: "An account with this email already exists." };
+      }
+      return { success: false, error: error.message };
+    }
+    if (data?.user?.identities?.length === 0) {
+      return { success: false, error: "An account with this email already exists." };
+    }
+    if (!data?.user?.email_confirmed_at) {
+      setEmailConfirmationRequired(true);
+    }
+    return { success: true };
+  }, []);
+
+  const logIn = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase().trim(),
+      password,
+    });
+    if (error) {
+      if (error.message.includes("Email not confirmed")) {
+        return { success: false, error: "Please verify your email before logging in." };
+      }
+      if (error.message.includes("Invalid login credentials")) {
+        return { success: false, error: "Invalid email or password." };
+      }
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  }, []);
+
+  const logOut = useCallback(async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    const cached = loadState();
+    setXP(cached.xp ?? 0);
+    setStreak(cached.streak ?? 0);
+    setCurrentDay(cached.currentDay ?? 1);
+    setActiveTrack(cached.activeTrack ?? null);
+    setCompletedDays(cached.completedDays ?? []);
+    setTotalWordsLearned(cached.totalWordsLearned ?? 0);
+  }, []);
+
+  const signInWithGoogle = useCallback(async () => {
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined,
+      },
+    });
+  }, []);
+
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.toLowerCase().trim(),
+      {
+        redirectTo: typeof window !== "undefined"
+          ? `${window.location.origin}/auth/reset-password`
+          : undefined,
+      },
+    );
+    if (error) return { success: false, error: error.message };
+    return { success: true };
+  }, []);
 
   return (
     <AppStateContext.Provider
       value={{
-        uuid,
-        xp,
-        addXP,
-        streak,
-        incrementStreak,
-        currentDay,
-        setCurrentDay,
-        activeTrack,
-        setActiveTrack,
-        completedDays,
-        markDayComplete,
-        isTrackLocked,
-        totalWordsLearned,
-        addWordsLearned,
-        user,
-        signUp,
-        logIn,
-        logOut,
+        uuid, xp, addXP, streak, incrementStreak,
+        currentDay, setCurrentDay, activeTrack, setActiveTrack,
+        completedDays, markDayComplete, isTrackLocked,
+        totalWordsLearned, addWordsLearned,
+        user, sessionLoading, emailConfirmationRequired,
+        signUp, logIn, logOut, signInWithGoogle, resetPassword,
       }}
     >
       {children}
