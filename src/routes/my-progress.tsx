@@ -383,7 +383,7 @@ function StreakCalendar({
 /* ───── Main Page ───── */
 
 function MyProgressPage() {
-  const { xp, streak, completedDays, activeTrack, totalWordsLearned } = useAppState();
+  const { xp, streak, longestStreak, completedDays, activeTrack, totalWordsLearned } = useAppState();
   const { difficultWords } = useDifficultWords();
   const { favorites } = useFavorites();
   const achievements = useAchievements();
@@ -392,7 +392,8 @@ function MyProgressPage() {
 
   const dailyLog = useMemo(() => seedDailyLog(xp, completedDays, streak, totalWordsLearned), []);
   const weeklyData = useMemo(() => getWeeklyXP(dailyLog), [dailyLog]);
-  const { currentStreak, longestStreak } = useMemo(() => computeStreaks(dailyLog), [dailyLog]);
+  const currentStreak = streak;
+  const longestCalculatedStreak = longestStreak;
 
   const thisWeek = useMemo(() => {
     const entries = Object.entries(dailyLog);
@@ -446,7 +447,14 @@ function MyProgressPage() {
   const missionsCompleted = useMemo(() => {
     try {
       const missions = JSON.parse(localStorage.getItem("urdu-alive-daily-missions") || "{}");
-      return missions?.completedCount ?? 0;
+      if (!missions?.date) return 0;
+      const done = [
+        missions.difficultWordsDone,
+        missions.learnNewDone,
+        missions.quizDone,
+        missions.sentenceDone,
+      ].filter(Boolean).length;
+      return done;
     } catch {
       return 0;
     }
@@ -564,7 +572,7 @@ function MyProgressPage() {
             />
             <StatCard
               icon={<Zap className="size-4" />}
-              value={`${longestStreak} days`}
+              value={`${longestCalculatedStreak} days`}
               label="Longest Streak"
               color="text-rose"
             />
@@ -676,7 +684,7 @@ function MyProgressPage() {
         <StreakCalendar
           dailyLog={dailyLog}
           currentStreak={currentStreak}
-          longestStreak={longestStreak}
+          longestStreak={longestCalculatedStreak}
         />
       </div>
     </div>
