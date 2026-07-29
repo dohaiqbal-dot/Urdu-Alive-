@@ -107,6 +107,7 @@ function Learn40DaysPage() {
     completedDays,
     markDayComplete,
     addXP,
+    addWordsLearned,
   } = useAppState();
   const { speak, loadingText, playingText, error } = useUrduSpeech();
   useEffect(() => {
@@ -190,6 +191,7 @@ function Learn40DaysPage() {
       if (quizScore >= quiz.length * 0.7) {
         markDayComplete(currentDay);
         addXP(50);
+        addWordsLearned(dayData?.words.length ?? 0);
         fireConfetti();
       }
     }
@@ -298,6 +300,7 @@ function Learn40DaysPage() {
                   onClick={() => {
                     markDayComplete(currentDay);
                     addXP(50);
+                    addWordsLearned(dayData?.words.length ?? 0);
                     fireConfetti();
                   }}
                   className="mt-3 px-4 py-2 bg-teal text-paper text-sm font-semibold rounded-full hover:bg-teal/90 transition-colors"
